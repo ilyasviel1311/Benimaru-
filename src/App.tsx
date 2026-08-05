@@ -205,11 +205,6 @@ export default function App() {
             setIsAuthModalOpen(false);
             setToastMessage(`Selamat datang kembali, ${profile.fullName}!`);
           }}
-          onOpenTrackWithResi={(resi) => {
-            setSelectedResi(resi);
-            setIsAuthModalOpen(false);
-            setIsTrackOrderModalOpen(true);
-          }}
           t={t}
         />
       )}
