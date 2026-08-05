@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Product, TranslationDictionary } from '../types';
-import { supabase } from '../lib/supabase';
 
 interface AdminDashboardViewProps {
   products: Product[];
@@ -11,212 +10,165 @@ interface AdminDashboardViewProps {
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   products,
   setProducts,
-  t
 }) => {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('laptop');
-  const [price, setPrice] = useState('');
-  const [stock, setStock] = useState('');
+  const [category, setCategory] = useState('handphone');
+  const [filename, setFilename] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [hasWarranty, setHasWarranty] = useState(true);
+  const [price, setPrice] = useState<number>(0);
+  const [stock, setStock] = useState<number>(1);
+  const [hasWarranty, setHasWarranty] = useState(false);
   const [requiresImei, setRequiresImei] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleAddProduct = async (e: React.FormEvent) => {
+  const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !price || !stock) return;
-
-    setLoading(true);
-
-    const newId = `prod_${Date.now()}`;
-    const filename = `${name.toUpperCase().replace(/\s+/g, '_')}.EXE`;
-    const numericPrice = Number(price);
-    const numericStock = Number(stock);
-
-    const { error } = await supabase.from('products').insert([
-      {
-        id: newId,
-        name,
-        category,
-        filename,
-        image_url: imageUrl || 'https://via.placeholder.com/150',
-        has_warranty: hasWarranty,
-        stock: numericStock,
-        price: numericPrice,
-        requires_imei: requiresImei
-      }
-    ]);
-
-    if (!error) {
-      const newProduct: Product = {
-        id: newId,
-        name,
-        category,
-        filename,
-        imageUrl: imageUrl || 'https://via.placeholder.com/150',
-        hasWarranty,
-        stock: numericStock,
-        price: numericPrice,
-        requiresImei
-      };
-
-      setProducts((prev) => [newProduct, ...prev]);
-      setName('');
-      setPrice('');
-      setStock('');
-      setImageUrl('');
-    }
-
-    setLoading(false);
+    const newProduct: Product = {
+      id: Date.now().toString(),
+      name,
+      category,
+      filename,
+      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f',
+      price: Number(price),
+      stock: Number(stock),
+      hasWarranty,
+      requiresImei,
+    };
+    setProducts([newProduct, ...products]);
+    setName('');
+    setFilename('');
+    setImageUrl('');
+    setPrice(0);
+    setStock(1);
   };
 
-  const handleDeleteProduct = async (id: string) => {
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (!error) {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-    }
+  const handleDelete = (id: string) => {
+    setProducts(products.filter((p) => p.id !== id));
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-[#c0c0c0] border-2 border-white border-b-black border-r-black p-4 text-black shadow-lg">
-        <h2 className="text-xl font-bold mb-4 uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined">add_box</span>
-          Tambah Produk Baru
-        </h2>
+    <div className="max-w-6xl mx-auto p-4 bg-[#c0c0c0] border-2 border-black font-mono">
+      <div className="bg-[#000080] text-white px-3 py-1 font-bold text-sm mb-4 flex justify-between items-center">
+        <span>ADMIN_DASHBOARD.EXE</span>
+        <span>[X]</span>
+      </div>
 
-        <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold mb-1">Nama Produk</label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleAddProduct} className="bg-white p-4 border-2 border-black">
+          <h2 className="font-bold mb-3 text-sm border-b-2 border-black pb-1">TAMBAH PRODUK BARU</h2>
+          
+          <div className="mb-2">
+            <label className="block text-xs font-bold mb-1">Nama Produk:</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-2 bg-white border-2 border-black font-mono text-sm"
-              placeholder="Contoh: ThinkPad X220"
+              className="w-full border-2 border-black p-1 text-xs"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold mb-1">Kategori</label>
+          <div className="mb-2">
+            <label className="block text-xs font-bold mb-1">Kategori:</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-2 bg-white border-2 border-black font-mono text-sm"
+              className="w-full border-2 border-black p-1 text-xs bg-white"
             >
-              <option value="laptop">Laptop / PC</option>
-              <option value="phone">Handphone</option>
-              <option value="acc">Aksesori</option>
+              <option value="handphone">Handphone</option>
+              <option value="laptop">Laptop</option>
+              <option value="aksesoris">Aksesoris</option>
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold mb-1">Harga (IDR)</label>
+          <div className="mb-2">
+            <label className="block text-xs font-bold mb-1">Filename (.exe):</label>
             <input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-full p-2 bg-white border-2 border-black font-mono text-sm"
-              placeholder="5000000"
+              type="text"
+              value={filename}
+              onChange={(e) => setFilename(e.target.value)}
+              className="w-full border-2 border-black p-1 text-xs"
+              placeholder="contoh: device.exe"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold mb-1">Stok Awal</label>
+          <div className="mb-2">
+            <label className="block text-xs font-bold mb-1">URL Gambar:</label>
             <input
-              type="number"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-              className="w-full p-2 bg-white border-2 border-black font-mono text-sm"
-              placeholder="10"
-              required
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-bold mb-1">URL Gambar Produk</label>
-            <input
-              type="url"
+              type="text"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              className="w-full p-2 bg-white border-2 border-black font-mono text-sm"
+              className="w-full border-2 border-black p-1 text-xs"
               placeholder="https://..."
             />
           </div>
 
-          <div className="flex gap-4 items-center sm:col-span-2">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <div>
+              <label className="block text-xs font-bold mb-1">Harga (Rp):</label>
+              <input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(Number(e.target.value))}
+                className="w-full border-2 border-black p-1 text-xs"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold mb-1">Stok:</label>
+              <input
+                type="number"
+                value={stock}
+                onChange={(e) => setStock(Number(e.target.value))}
+                className="w-full border-2 border-black p-1 text-xs"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 my-3 text-xs">
+            <label className="flex items-center gap-1 font-bold">
               <input
                 type="checkbox"
                 checked={hasWarranty}
                 onChange={(e) => setHasWarranty(e.target.checked)}
               />
-              Ada Garansi
+              Garansi
             </label>
-
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
+            <label className="flex items-center gap-1 font-bold">
               <input
                 type="checkbox"
                 checked={requiresImei}
                 onChange={(e) => setRequiresImei(e.target.checked)}
               />
-              Perlu IMEI / SN
+              Butuh IMEI
             </label>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="sm:col-span-2 bg-[#008080] hover:bg-[#006666] text-white font-bold p-3 border-2 border-black shadow-[2px_2px_0px_#000] uppercase"
+            className="w-full bg-[#df551f] text-white font-bold py-1 border-2 border-black text-xs uppercase hover:bg-[#c44615]"
           >
-            {loading ? 'Menyimpan...' : '[ SIMPAN KE DATABASE ]'}
+            Simpan Produk
           </button>
         </form>
-      </div>
 
-      <div className="bg-[#c0c0c0] border-2 border-white border-b-black border-r-black p-4 text-black shadow-lg">
-        <h2 className="text-xl font-bold mb-4 uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined">inventory_2</span>
-          Daftar Stok Produk ({products.length})
-        </h2>
-
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border-2 border-black bg-white text-xs">
-            <thead>
-              <tr className="bg-[#000080] text-white">
-                <th className="border border-black p-2 text-left">ID</th>
-                <th className="border border-black p-2 text-left">Nama</th>
-                <th className="border border-black p-2 text-center">Kategori</th>
-                <th className="border border-black p-2 text-right">Harga</th>
-                <th className="border border-black p-2 text-center">Stok</th>
-                <th className="border border-black p-2 text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-100">
-                  <td className="border border-black p-2 font-mono">{p.id}</td>
-                  <td className="border border-black p-2 font-bold">{p.name}</td>
-                  <td className="border border-black p-2 text-center uppercase">{p.category}</td>
-                  <td className="border border-black p-2 text-right font-mono">
-                    Rp {p.price.toLocaleString('id-ID')}
-                  </td>
-                  <td className="border border-black p-2 text-center font-bold">{p.stock}</td>
-                  <td className="border border-black p-2 text-center">
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteProduct(p.id)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 font-bold border border-black text-[10px]"
-                    >
-                      HAPUS
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="bg-white p-4 border-2 border-black overflow-y-auto max-h-[450px]">
+          <h2 className="font-bold mb-3 text-sm border-b-2 border-black pb-1">DAFTAR PRODUK ({products.length})</h2>
+          {products.map((p) => (
+            <div key={p.id} className="flex justify-between items-center border-b border-gray-300 py-2 text-xs">
+              <div>
+                <p className="font-bold">{p.name}</p>
+                <p className="text-gray-600">Rp {p.price.toLocaleString()} | Stok: {p.stock}</p>
+              </div>
+              <button
+                onClick={() => handleDelete(p.id)}
+                className="bg-red-600 text-white px-2 py-1 border border-black font-bold text-[10px]"
+              >
+                Hapus
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </div>
