@@ -43,7 +43,7 @@ export default function App() {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*');
+      const { data } = await supabase.from('products').select('*');
       if (data && data.length > 0) {
         const mappedProducts: Product[] = data.map((item: any) => ({
           id: item.id,
