@@ -1,0 +1,6 @@
+{
+  "name": "Ilyasviel Store - 90s Retro Pixel",
+  "description": "Toko elektronik Ilyasviel Store 90s Retro Pixel buatan Google Stitch dengan fitur Ubah Bahasa (ID/EN) secara dinamis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
