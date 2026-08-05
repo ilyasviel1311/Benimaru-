@@ -1,3 +1,4 @@
+import { supabase } from './lib/supabase';
 import { useState } from 'react';
 import { Language, Product, CartItem, ActiveModule, UserProfile } from './types';
 import { translations, initialProducts } from './data/translations';
