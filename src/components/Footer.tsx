@@ -1,26 +1,20 @@
 import React from 'react';
-import { Language } from '../types';
+import { TranslationDictionary } from '../types';
 
 interface FooterProps {
-  currentLang: Language;
+  t: TranslationDictionary;
 }
 
-export const Footer: React.FC<FooterProps> = ({ currentLang }) => {
+export const Footer: React.FC<FooterProps> = ({ t }) => {
   return (
-    <footer className="bg-[#0a192f] text-[#74829d] w-full py-1 px-2.5 sm:px-4 flex flex-row justify-between items-center border-t-2 border-black z-40 fixed bottom-0 left-0 right-0 h-7 text-[10px] sm:text-xs font-mono-retro">
-      <div className="font-bold text-[#e4e2e4] truncate max-w-[60%] sm:max-w-none">
-        © 1995-2026 ILYASVIEL CORP. {currentLang === 'id' ? 'HAK CIPTA DILINDUNGI.' : 'ALL RIGHTS RESERVED.'}
-      </div>
-      <div className="flex gap-2 sm:gap-4 shrink-0 text-[10px] sm:text-xs">
-        <a className="text-[#e4e2e4] opacity-80 hover:text-[#ffb59d] transition-colors" href="#privacy">
-          {currentLang === 'id' ? 'Privasi' : 'Privacy'}
-        </a>
-        <a className="text-[#e4e2e4] opacity-80 hover:text-[#ffb59d] transition-colors" href="#terms">
-          {currentLang === 'id' ? 'Ketentuan' : 'Terms'}
-        </a>
-        <a className="text-[#e4e2e4] opacity-80 hover:text-[#ffb59d] transition-colors" href="#bbs">
-          {currentLang === 'id' ? 'BBS Support' : 'BBS Support'}
-        </a>
+    <footer className="bg-[#c0c0c0] border-t-4 border-black p-4 text-center font-mono text-xs mt-auto">
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+        <p>© 1995-2026 ILYASVIEL CORP. HAK CIPTA DILINDUNGI.</p>
+        <div className="flex gap-4 text-gray-700">
+          <span>Privasi</span>
+          <span>Ketentuan</span>
+          <span>BBS Support</span>
+        </div>
       </div>
     </footer>
   );
