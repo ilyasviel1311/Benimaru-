@@ -1,8 +1,7 @@
+import React, { useState, useEffect } from 'react';
+import { Language, ActiveModule, Product, CartItem, UserProfile } from './types';
+import { translations } from './data/translations';
 import { supabase } from './lib/supabase';
-import { useState } from 'react';
-import { Language, Product, CartItem, ActiveModule, UserProfile } from './types';
-import { translations, initialProducts } from './data/translations';
-import { useBodyScrollLock } from './hooks/useBodyScrollLock';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { SearchFilter } from './components/SearchFilter';
@@ -23,49 +22,45 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState<boolean>(false);
   const [selectedDetailProduct, setSelectedDetailProduct] = useState<Product | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // User Auth & Track Order Modal states
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isTrackOrderModalOpen, setIsTrackOrderModalOpen] = useState<boolean>(false);
   const [selectedResi, setSelectedResi] = useState<string>('JNE-95082101');
 
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase.from('products').select('*');
+      if (data && data.length > 0) {
+        const mappedProducts: Product[] = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          filename: item.filename,
+          imageUrl: item.image_url,
+          hasWarranty: item.has_warranty,
+          stock: item.stock,
+          price: Number(item.price),
+          requiresImei: item.requires_imei
+        }));
+        setProducts(mappedProducts);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const t = translations[lang];
+
   const handleOpenTrackWithResi = (resi: string) => {
     setSelectedResi(resi);
     setIsAuthModalOpen(false);
     setIsTrackOrderModalOpen(true);
-  };
-
-  useBodyScrollLock(isUpgradeModalOpen);
-
-  const t = translations[lang];
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3200);
-  };
-
-  const handleLanguageChange = (newLang: Language) => {
-    setLang(newLang);
-    const msg = newLang === 'id' ? 'Bahasa diubah ke Indonesia 🇮🇩' : 'Language switched to English 🇬🇧';
-    showToast(msg);
-  };
-
-  const handleModuleChange = (module: ActiveModule) => {
-    setActiveModule(module);
-    let msg = '';
-    if (module === 'pos') {
-      msg = lang === 'id' ? '📟 Beralih ke Modul Kasir iPad POS' : '📟 Switched to iPad POS Cashier Module';
-    } else if (module === 'admin') {
-      msg = lang === 'id' ? '📊 Beralih ke Modul Dashboard Admin' : '📊 Switched to Admin Dashboard Module';
-    } else {
-      msg = lang === 'id' ? '🏪 Beralih ke Modul Ilyasviel 95 Store' : '🏪 Switched to Ilyasviel 95 Store Module';
-    }
-    showToast(msg);
   };
 
   const handleAddToCart = (product: Product) => {
@@ -80,215 +75,154 @@ export default function App() {
       }
       return [...prev, { product, quantity: 1 }];
     });
-
-    const msg = lang === 'id' 
-      ? `Produk masuk keranjang! (${product.name})` 
-      : `Product added to cart! (${product.name})`;
-    showToast(msg);
+    setToastMessage(`${product.name} telah ditambahkan ke keranjang`);
   };
 
-  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const handleUpdateQuantity = (productId: string, delta: number) => {
+    setCartItems((prev) =>
+      prev
+        .map((item) => {
+          if (item.product.id === productId) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter((item): item is CartItem => item !== null)
+    );
+  };
 
-  const filteredProducts = initialProducts.filter((product) => {
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const handleRemoveFromCart = (productId: string) => {
+    setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+  };
+
+  const handleClearCart = () => {
+    setCartItems([]);
+  };
+
+  const handleOpenDetail = (product: Product) => {
+    setSelectedDetailProduct(product);
+    setIsDetailModalOpen(true);
+  };
+
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory =
+      selectedCategory === 'all' || product.category === selectedCategory;
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.filename.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  if (activeModule === 'pos') {
-    return (
-      <div className="relative min-h-screen">
-        <RetroToast message={toastMessage} onClose={() => setToastMessage(null)} />
-
-        <PosView
-          currentLang={lang}
-          t={t}
-          onLanguageChange={handleLanguageChange}
-          onSwitchToStoreView={() => handleModuleChange('store')}
-          onModuleChange={handleModuleChange}
-          onShowToast={showToast}
-        />
-      </div>
-    );
-  }
-
-  if (activeModule === 'admin') {
-    return (
-      <div className="relative min-h-screen">
-        <RetroToast message={toastMessage} onClose={() => setToastMessage(null)} />
-
-        <AdminDashboardView
-          currentLang={lang}
-          onLanguageChange={handleLanguageChange}
-          onModuleChange={handleModuleChange}
-          onShowToast={showToast}
-        />
-      </div>
-    );
-  }
+  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <div className="min-h-screen text-on-surface font-work-retro antialiased flex flex-col pt-[76px] pb-16 relative">
-      {/* Top Header */}
+    <div className="min-h-screen bg-[#008080] text-[#000000] font-mono-retro flex flex-col justify-between selection:bg-[#df551f] selection:text-white">
       <Header
         t={t}
         currentLang={lang}
-        onLanguageChange={handleLanguageChange}
+        onLanguageChange={setLang}
         activeModule={activeModule}
-        onModuleChange={handleModuleChange}
+        onModuleChange={setActiveModule}
         cartCount={cartCount}
         onOpenCart={() => setIsCheckoutOpen(true)}
         userProfile={userProfile}
         onOpenAuth={() => setIsAuthModalOpen(true)}
-        onLogout={() => {
-          setUserProfile(null);
-          showToast(lang === 'id' ? 'Berhasil Logout dari Akun' : 'Successfully Logged Out');
-        }}
+        onLogout={() => setUserProfile(null)}
         onOpenTrackOrder={() => setIsTrackOrderModalOpen(true)}
       />
 
-      {/* Retro 90s Notification Toast (SYSTEM_ALERT.EXE) */}
-      <RetroToast message={toastMessage} onClose={() => setToastMessage(null)} />
+      {activeModule === 'store' && (
+        <main className="pt-24 pb-12 px-2 sm:px-4 max-w-7xl mx-auto w-full flex-grow">
+          <HeroSection t={t} />
 
-      {/* Main Content Area */}
-      <main className="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full touch-scroll">
-        {/* Hero Window Section */}
-        <HeroSection
-          t={t}
-          onExploreClick={() => {
-            setSelectedCategory('all');
-            const catalogElem = document.getElementById('catalog');
-            if (catalogElem) {
-              catalogElem.scrollIntoView({ behavior: 'smooth' });
-            }
-          }}
-        />
+          <SearchFilter
+            t={t}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+          />
 
-        {/* Search & Filter Buttons */}
-        <SearchFilter
-          t={t}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-        />
-
-        {/* Product Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl mx-auto mb-12">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              t={t}
-              onAddToCart={handleAddToCart}
-              onOpenDetail={(prod) => {
-                setSelectedDetailProduct(prod);
-                setIsDetailModalOpen(true);
-              }}
-            />
-          ))}
-
-          {filteredProducts.length === 0 && (
-            <div className="col-span-full text-center py-12 retro-window bg-[#F4F1DE] text-black font-mono-retro">
-              <span className="material-symbols-outlined text-4xl mb-2 text-[#df551f]">search_off</span>
-              <p className="font-bold">
-                {lang === 'id' ? 'Tidak ada produk elektronik yang ditemukan.' : 'No electronics products found.'}
-              </p>
-            </div>
-          )}
-        </section>
-      </main>
-
-      {/* Upgrade OS Modal */}
-      {isUpgradeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 modal-backdrop overscroll-contain">
-          <div className="retro-window max-w-md w-full text-black max-h-[85vh] overflow-y-auto touch-scroll overscroll-contain">
-            <div className="retro-titlebar px-2 py-1 flex justify-between items-center text-white">
-              <span className="font-mono-retro text-xs font-bold">SYSTEM_UPGRADE.EXE</span>
-              <button
-                onClick={() => setIsUpgradeModalOpen(false)}
-                className="border border-black bg-[#c0c0c0] text-black px-1 text-xs font-bold hover:bg-white"
-              >
-                X
-              </button>
-            </div>
-            <div className="p-6 bg-[#F4F1DE] font-mono-retro text-xs text-center">
-              <span className="material-symbols-outlined text-5xl text-[#00A896] mb-2">memory</span>
-              <h3 className="font-space-retro font-bold text-lg mb-2">
-                {lang === 'id' ? 'ILYASVIEL STORE SYSTEM 95 TERINTEGRASI' : 'ILYASVIEL STORE SYSTEM 95 INTEGRATED'}
-              </h3>
-              <p className="mb-4">
-                {lang === 'id'
-                  ? 'Anda sedang menjalankan versi stabil Ilyasviel System 95 dengan dukungan Multi-Bahasa Dinamis (ID/EN) dan Resi JNE.'
-                  : 'You are running the stable Ilyasviel System 95 build with Dynamic Multi-language (ID/EN) and JNE tracking.'}
-              </p>
-              <button
-                onClick={() => setIsUpgradeModalOpen(false)}
-                className="retro-button retro-button-orange px-4 py-2 font-bold text-white uppercase"
-              >
-                OK
-              </button>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                t={t}
+                onAddToCart={handleAddToCart}
+                onOpenDetail={handleOpenDetail}
+              />
+            ))}
           </div>
-        </div>
+        </main>
       )}
 
-      {/* Product Detail & Customer Reviews Modal */}
-      <ProductDetailModal
-        product={selectedDetailProduct}
-        isOpen={isDetailModalOpen}
-        onClose={() => {
-          setIsDetailModalOpen(false);
-          setSelectedDetailProduct(null);
-        }}
-        t={t}
-        currentLang={lang}
-        onAddToCart={handleAddToCart}
-      />
+      {activeModule === 'pos' && (
+        <main className="pt-20 pb-12 px-2 sm:px-4 max-w-7xl mx-auto w-full flex-grow">
+          <PosView products={products} t={t} />
+        </main>
+      )}
 
-      {/* Checkout Payment Gateway Modal */}
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        cartItems={cartItems}
-        currentLang={lang}
-        t={t}
-        onClearCart={() => setCartItems([])}
-        userProfile={userProfile}
-      />
+      {activeModule === 'admin' && (
+        <main className="pt-20 pb-12 px-2 sm:px-4 max-w-7xl mx-auto w-full flex-grow">
+          <AdminDashboardView products={products} setProducts={setProducts} t={t} />
+        </main>
+      )}
 
-      {/* User Login & Registration Retro Modal (USER_AUTH.EXE) */}
-      <UserAuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        currentLang={lang}
-        userProfile={userProfile}
-        onLogout={() => {
-          setUserProfile(null);
-          showToast(lang === 'id' ? 'Berhasil Logout dari Akun' : 'Successfully Logged Out');
-        }}
-        onTrackOrderWithResi={handleOpenTrackWithResi}
-        onLoginSuccess={(profile, isNewRegister) => {
-          setUserProfile(profile);
-          const msg = isNewRegister
-            ? (lang === 'id' ? `Pendaftaran Berhasil! Selamat datang, ${profile.fullName}` : `Registration Successful! Welcome, ${profile.fullName}`)
-            : (lang === 'id' ? `Login Berhasil! Selamat datang, ${profile.fullName}` : `Login Successful! Welcome, ${profile.fullName}`);
-          showToast(msg);
-        }}
-      />
+      <Footer t={t} />
 
-      {/* Order Tracking & Digital Warranty Retro Modal (TRACK_ORDER.EXE) */}
-      <TrackOrderModal
-        isOpen={isTrackOrderModalOpen}
-        onClose={() => setIsTrackOrderModalOpen(false)}
-        currentLang={lang}
-        t={t}
-        initialResi={selectedResi}
-      />
+      {isCheckoutOpen && (
+        <CheckoutModal
+          isOpen={isCheckoutOpen}
+          onClose={() => setIsCheckoutOpen(false)}
+          cartItems={cartItems}
+          onUpdateQuantity={handleUpdateQuantity}
+          onRemoveItem={handleRemoveFromCart}
+          onClearCart={handleClearCart}
+          t={t}
+        />
+      )}
 
-      {/* Footer */}
-      <Footer currentLang={lang} />
+      {isDetailModalOpen && selectedDetailProduct && (
+        <ProductDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          product={selectedDetailProduct}
+          onAddToCart={handleAddToCart}
+          t={t}
+        />
+      )}
+
+      {isAuthModalOpen && (
+        <UserAuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onLoginSuccess={(profile) => {
+            setUserProfile(profile);
+            setIsAuthModalOpen(false);
+            setToastMessage(`Selamat datang kembali, ${profile.fullName}!`);
+          }}
+          onOpenTrackWithResi={handleOpenTrackWithResi}
+          t={t}
+        />
+      )}
+
+      {isTrackOrderModalOpen && (
+        <TrackOrderModal
+          isOpen={isTrackOrderModalOpen}
+          onClose={() => setIsTrackOrderModalOpen(false)}
+          initialResi={selectedResi}
+          t={t}
+        />
+      )}
+
+      {toastMessage && (
+        <RetroToast
+          message={toastMessage}
+          onClose={() => setToastMessage(null)}
+        />
+      )}
     </div>
   );
 }
-
