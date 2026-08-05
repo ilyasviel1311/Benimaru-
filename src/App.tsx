@@ -65,12 +65,6 @@ export default function App() {
 
   const t = translations[lang];
 
-  const handleOpenTrackWithResi = (resi: string) => {
-    setSelectedResi(resi);
-    setIsAuthModalOpen(false);
-    setIsTrackOrderModalOpen(true);
-  };
-
   const handleAddToCart = (product: Product) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
@@ -211,7 +205,11 @@ export default function App() {
             setIsAuthModalOpen(false);
             setToastMessage(`Selamat datang kembali, ${profile.fullName}!`);
           }}
-          onOpenTrackWithResi={handleOpenTrackWithResi}
+          onOpenTrackWithResi={(resi) => {
+            setSelectedResi(resi);
+            setIsAuthModalOpen(false);
+            setIsTrackOrderModalOpen(true);
+          }}
           t={t}
         />
       )}
