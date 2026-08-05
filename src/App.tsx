@@ -17,7 +17,15 @@ import { Footer } from './components/Footer';
 
 export default function App() {
   const [lang, setLang] = useState<Language>('id');
-  const [activeModule, setActiveModule] = useState<ActiveModule>('store');
+  const [activeModule, setActiveModule] = useState<ActiveModule>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    if (mode === 'admin' || mode === 'pos') {
+      return mode;
+    }
+    return 'store';
+  });
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -160,7 +168,7 @@ export default function App() {
 
       {activeModule === 'pos' && (
         <main className="pt-20 pb-12 px-2 sm:px-4 max-w-7xl mx-auto w-full flex-grow">
-          <PosView products={products} t={t} />
+          <PosView products={products} setProducts={setProducts} t={t} />
         </main>
       )}
 
