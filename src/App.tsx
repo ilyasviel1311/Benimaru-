@@ -144,7 +144,6 @@ export default function App() {
           <div id="catalog-section">
             <SearchFilter
               t={t}
-              currentLang={lang}
               selectedCategory={selectedCategory}
               onSelectCategory={setSelectedCategory}
               searchTerm={searchTerm}
