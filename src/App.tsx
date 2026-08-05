@@ -136,15 +136,21 @@ export default function App() {
 
       {activeModule === 'store' && (
         <main className="pt-24 pb-12 px-2 sm:px-4 max-w-7xl mx-auto w-full flex-grow">
-          <HeroSection t={t} />
+          <HeroSection t={t} onExploreClick={() => {
+            const el = document.getElementById('catalog-section');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }} />
 
-          <SearchFilter
-            t={t}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-          />
+          <div id="catalog-section">
+            <SearchFilter
+              t={t}
+              currentLang={lang}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+            />
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
             {filteredProducts.map((product) => (
